@@ -9,13 +9,13 @@ services:
     command: 'start-from-init --masterkey "MasterkeyNeedsToHave32Characters" --tlsMode disabled'
     environment:
       - 'ZITADEL_DATABASE_POSTGRES_HOST=db'
-      - 'ZITADEL_DATABASE_POSTGRES_PORT=5432'
+      - 'ZITADEL_DATABASE_POSTGRES_PORT=5433'
       - 'ZITADEL_DATABASE_POSTGRES_DATABASE=zitadel'
       - 'ZITADEL_DATABASE_POSTGRES_USER_USERNAME=zitadel'
       - 'ZITADEL_DATABASE_POSTGRES_USER_PASSWORD=zitadel'
       - 'ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE=disable'
-      - 'ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME=postgres'
-      - 'ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD=postgres'
+      - 'ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME=yugabyte'
+      - 'ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD=yugabyte'
       - 'ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE=disable'
       - 'ZITADEL_EXTERNALSECURE=false'
     depends_on:
@@ -26,19 +26,22 @@ services:
 
   db:
     restart: 'always'
-    image: postgres:16-alpine
+    image: yugabytedb/yugabyte:2024.1.1.0-b137
+    command: bash -c 'rm -rf /tmp/.yb.* ; yugabyted start --enable_pg_parity_tech_preview --background=false --tserver_flags=ysql_pg_conf_csv='"{log_statement='all'}"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=zitadel
+      - YSQL_USER=yugabyte
+      - YSQL_PASSWORD=yugabyte
+      - YSQL_DB=zitadel
     networks:
       - 'zitadel'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-d", "zitadel", "-U", "postgres"]
+      test: postgres/bin/pg_isready -h db
       interval: '10s'
       timeout: '30s'
       retries: 5
       start_period: '20s'
+    ports:
+      - '15433:15433'
 
 networks:
   zitadel:
