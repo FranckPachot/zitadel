@@ -18,9 +18,19 @@ CREATE TABLE system.assets (
     hash TEXT GENERATED ALWAYS AS (md5(data)) STORED,
     data BYTEA,
     updated_at TIMESTAMPTZ,
-
     PRIMARY KEY (instance_id, resource_owner, name)
 );
+CREATE OR REPLACE FUNCTION set_asset_hash()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.hash := md5(NEW.data);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER trigger_set_asset_hash
+BEFORE INSERT OR UPDATE ON system.assets
+FOR EACH ROW
+EXECUTE FUNCTION set_asset_hash();
 `
 )
 
